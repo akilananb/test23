@@ -1,0 +1,52 @@
+name: Step 2, Advanced Features
+
+# This step triggers after advanced features implementation
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "src/**/__tests__/**"
+      - "src/**/types/**"
+      - "src/**/interfaces/**"
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  get_current_step:
+    name: Check current step number
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - id: get_step
+        run: echo "current_step=$(cat ./.github/steps/-step.txt)" >> $GITHUB_OUTPUT
+    outputs:
+      current_step: ${{ steps.get_step.outputs.current_step }}
+
+  on_advanced_features:
+    name: On Advanced Features Implementation
+    needs: get_current_step
+    if: ${{ !github.event.repository.is_template && needs.get_current_step.outputs.current_step == 2 }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check test and type files
+        uses: skills/action-check-file@v1
+        with:
+          file: "src/**/{__tests__,types,interfaces}/**"
+          search: "interface|type|test"
+
+      - name: Update to step 3
+        uses: skills/action-update-step@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          from_step: 2
+          to_step: 3

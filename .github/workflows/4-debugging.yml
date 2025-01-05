@@ -1,0 +1,52 @@
+name: Step 4, Debugging
+
+# This step triggers after debugging tasks
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "src/**/__tests__/**"
+      - "src/**/debug/**"
+      - "src/lib/logger.ts"
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  get_current_step:
+    name: Check current step number
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - id: get_step
+        run: echo "current_step=$(cat ./.github/steps/-step.txt)" >> $GITHUB_OUTPUT
+    outputs:
+      current_step: ${{ steps.get_step.outputs.current_step }}
+
+  on_debugging:
+    name: On Debugging Implementation
+    needs: get_current_step
+    if: ${{ !github.event.repository.is_template && needs.get_current_step.outputs.current_step == 4 }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check debug files
+        uses: skills/action-check-file@v1
+        with:
+          file: "src/**/{__tests__,debug}/**"
+          search: "debug|test|error"
+
+      - name: Update to final step
+        uses: skills/action-update-step@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          from_step: 4
+          to_step: X

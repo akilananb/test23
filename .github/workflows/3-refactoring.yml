@@ -1,0 +1,52 @@
+name: Step 3, Refactoring
+
+# This step triggers after refactoring tasks
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "src/**/*.js"
+      - "src/**/*.ts"
+      - "src/**/*.tsx"
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  get_current_step:
+    name: Check current step number
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - id: get_step
+        run: echo "current_step=$(cat ./.github/steps/-step.txt)" >> $GITHUB_OUTPUT
+    outputs:
+      current_step: ${{ steps.get_step.outputs.current_step }}
+
+  on_refactoring:
+    name: On Code Refactoring
+    needs: get_current_step
+    if: ${{ !github.event.repository.is_template && needs.get_current_step.outputs.current_step == 3 }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check refactored code
+        uses: skills/action-check-file@v1
+        with:
+          file: "src/**/*.{js,ts,tsx}"
+          search: "refactor|optimize|improve"
+
+      - name: Update to step 4
+        uses: skills/action-update-step@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          from_step: 3
+          to_step: 4
